@@ -36,13 +36,38 @@ Sign-in at `/signin` with the Phantom browser wallet. `supabase/config.toml` ena
 
 > This project uses non-default ports (54420–54429) so it can run alongside other local Supabase projects.
 
+## Run against hosted Supabase
+
+```bash
+cp .env.example .env.local   # then edit to hosted values:
+# NEXT_PUBLIC_RECALLRELAY_ENV=hosted
+# NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+npm run verify:env           # must report "Hosted data"
+npx supabase link --project-ref <project-ref>
+npx supabase db push         # migrations are the source of truth
+npm run db:test -- --linked  # pgTAP against hosted (suite seeds nothing; run seed once via db query -f supabase/seed.sql if the project is fresh)
+npm run verify:auth          # SIWS round trip against hosted
+npm run verify:isolation     # session isolation + public privacy against hosted
+npm run dev
+```
+
+Hosted Auth requires the **Web3 provider** to be enabled once in the Supabase dashboard: **Authentication → Providers → Web3 → Enable** (Solana). The SIWS flow is the same as local: wallet connect → sign message → `grant_type=web3` session → `auth.uid()` → profile. No redirect URLs are required for the popup flow, but adding `http://localhost:3000` under **Authentication → URL Configuration** is recommended.
+
+### Switching environments safely
+
+- `.env.local` is gitignored and always points at ONE project (local or hosted). The environment badge in the owner/manufacturer shells shows which one: `Local data` / `Hosted data` / `Demo data`.
+- Sessions, profiles, and wallets are per-project. A session minted against local Supabase is meaningless to the hosted project (different JWT secret and publishable key) and vice versa — the app never assumes they are portable.
+- After switching `.env.local` between environments, restart `npm run dev` (Next inlines `NEXT_PUBLIC_*` at build time) and sign in again. Stale identity from the previous environment cannot appear because auth cookies are validated against the new project's keys and rejected.
+
 ### Scripts
 
 | Script | Purpose |
 | --- | --- |
 | `npm run verify:env` | Validates `NEXT_PUBLIC_*` env (fails on partial config) |
-| `npm run verify:auth` | Auth health + full SIWS round trip: sign-in, `create_profile`, wallet binding, `find_profile_by_wallet`, admin cleanup |
-| `npm run db:test` | pgTAP suite (`supabase test db`) — schema, seed, RLS, RPCs |
+| `npm run verify:auth` | Auth health + full SIWS round trip: sign-in, `create_profile`, wallet binding, `find_profile_by_wallet`, admin cleanup (`--url`/`--key` flags override env) |
+| `npm run verify:isolation` | Two-wallet session isolation + forged-access + anon privacy checks (`--url`/`--key` flags override env) |
+| `npm run db:test` | pgTAP suite (`supabase test db`) — schema, seed, RLS, RPCs; add `-- --linked` to run against hosted |
 | `npm run db:types` | Regenerates `src/lib/supabase/database.types.ts` from the local DB |
 | `npm run db:reset` | Re-applies migrations and seed |
 | `npm run supabase:start` / `:stop` / `:status` | Local stack control |
@@ -56,8 +81,10 @@ npm run typecheck
 npm test          # vitest (always runs in Demo data mode)
 npm run build
 npm run verify:env
-npm run verify:auth   # requires the local stack running
-npm run db:test       # requires the local stack running
+npm run verify:auth        # target = whatever .env.local (or --url/--key) points at
+npm run verify:isolation
+npm run db:test            # local stack
+npm run db:test -- --linked  # hosted project (after link + seed)
 ```
 
 ## Routes

@@ -3,6 +3,14 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
+-- pgTAP lives in `extensions`; make resolution explicit so the suite also
+-- passes against hosted projects whose test connection search_path differs.
+set local search_path = public, extensions;
+
+-- Hosted test sessions connect as the CLI login role; establish the
+-- postgres baseline the assertions assume (owner, RLS-suppressed baseline).
+set role postgres;
+
 select plan(39);
 
 -- ---------------------------------------------------------------------------
@@ -175,7 +183,7 @@ select is(
 set local role anon;
 create temporary table t_anon_recalls as
   select count(*)::int as n from public.recalls;
-reset role;
+set role postgres;
 
 select is(
   (select n from t_anon_recalls),

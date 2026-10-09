@@ -3,6 +3,13 @@
 -- postgres so RLS row filtering never masks the result being checked.
 begin;
 
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+
+-- Hosted test sessions connect as the CLI login role; establish the
+-- postgres baseline the assertions assume (owner, RLS-suppressed baseline).
+set role postgres;
+
 select plan(37);
 
 -- fixture: a fourth SIWS user with no profile yet (rolled back at the end)
@@ -30,7 +37,7 @@ select lives_ok($$ select public.create_profile('Test User') $$,
   'a fresh SIWS user can create a profile');
 select throws_ok($$ select public.create_profile('Again') $$,
   null, 'profile already exists', 'duplicate create_profile is rejected');
-reset role;
+set role postgres;
 
 select is(
   (select full_name from public.profiles where id = '44444444-4444-4444-4444-444444440007'),
@@ -55,7 +62,7 @@ select throws_ok($$ select public.create_manufacturer('Dup Co', 'bobs-gadgets') 
   null, 'slug already in use', 'duplicate slug is rejected');
 select throws_ok($$ select public.create_manufacturer('Bad Slug', 'Not A Slug') $$,
   null, 'slug must be lowercase kebab-case', 'invalid slug is rejected');
-reset role;
+set role postgres;
 
 select is(
   (select count(*)::int from public.manufacturers where slug = 'bobs-gadgets'),
@@ -75,7 +82,7 @@ select lives_ok(
   $$ select public.create_product_model('44444444-4444-4444-4444-444444444444',
                                         'TRX', 'TrailRadio X', 'Outdoor electronics') $$,
   'staff can create a product model');
-reset role;
+set role postgres;
 
 select is(
   (select count(*)::int from public.product_models where sku = 'TRX'),
@@ -90,7 +97,7 @@ select throws_ok(
   $$ select public.register_product_unit('55555555-5555-5555-5555-555555555501', 'HC10-X001') $$,
   null, 'only manufacturer owners or admins can register units',
   'non-staff cannot register units');
-reset role;
+set role postgres;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
@@ -106,7 +113,7 @@ select throws_ok(
   $$ select public.register_product_unit('55555555-5555-5555-5555-555555555502', 'TCM-X002',
        'NoSuchWalletAddress') $$,
   null, 'no RecallRelay profile for that wallet', 'unknown owner wallet is rejected');
-reset role;
+set role postgres;
 
 select is(
   (select count(*)::int from public.product_units where serial_number = 'TCM-TEST1'),
@@ -146,7 +153,7 @@ select lives_ok(
        '66666666-6666-6666-6666-666666666601',
        '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', 'smoke transfer') $$,
   'current owner can transfer');
-reset role;
+set role postgres;
 
 select is(
   (select current_owner_profile_id from public.product_units
@@ -173,7 +180,7 @@ select throws_ok(
        '55555555-5555-5555-5555-555555555501', 'Sneaky', 'urgent', 'Stop', 'all_units') $$,
   null, 'only manufacturer owners or admins can issue recalls',
   'non-staff cannot issue recalls');
-reset role;
+set role postgres;
 
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"33333333-3333-3333-3333-333333333333"}', true);
@@ -192,7 +199,7 @@ select throws_ok(
   $$ select public.issue_recall('44444444-4444-4444-4444-444444444444',
        '55555555-5555-5555-5555-555555555501', 'Bad severity', 'catastrophic', 'Stop', 'all_units') $$,
   null, 'invalid severity', 'invalid severity is rejected');
-reset role;
+set role postgres;
 
 select is(
   (select count(*)::int from public.notifications
@@ -221,7 +228,7 @@ select is(
 select is(
   (select (public.recallrelay_health() ->> 'ok')::boolean),
   true, 'health rpc responds');
-reset role;
+set role postgres;
 
 select ok(
   not has_function_privilege('anon', 'public.find_profile_by_wallet(text)', 'execute'),

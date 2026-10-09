@@ -1,6 +1,13 @@
 -- RecallRelay Phase 2 — row level security assertions (pgTAP)
 begin;
 
+create extension if not exists pgtap with schema extensions;
+set local search_path = public, extensions;
+
+-- Hosted test sessions connect as the CLI login role; establish the
+-- postgres baseline the assertions assume (owner, RLS-suppressed baseline).
+set role postgres;
+
 select plan(38);
 
 -- ---------------------------------------------------------------------------
@@ -27,7 +34,7 @@ create temporary table t_a1 as
   select count(*)::int as n from public.recalls;
 create temporary table t_a2 as
   select count(*)::int as n from public.v_public_product_verification;
-reset role;
+set role postgres;
 select is((select n from t_a1), 1, 'anon sees only the active recall');
 select is((select n from t_a2), 3, 'anon can read the public verification view');
 
@@ -80,7 +87,7 @@ select ok(not public.is_manufacturer_member('44444444-4444-4444-4444-44444444444
 select is(public.manufacturer_member_role('44444444-4444-4444-4444-444444444444'), null,
   'bob has no manufacturer role');
 
-reset role;
+set role postgres;
 
 -- ---------------------------------------------------------------------------
 -- alice (authenticated, out-of-scope owner)
@@ -93,7 +100,7 @@ select is(
   0, 'alice sees no recall notifications'
 );
 select is((select count(*)::int from public.activity_events), 1, 'alice sees activity for her unit only');
-reset role;
+set role postgres;
 
 -- ---------------------------------------------------------------------------
 -- ops (manufacturer owner)
@@ -113,7 +120,7 @@ select lives_ok(
      values ('44444444-4444-4444-4444-444444444444', 'ZZ1', 'Zonk One', 'Test fixtures') $$,
   'ops can insert a product model under RLS'
 );
-reset role;
+set role postgres;
 
 -- ---------------------------------------------------------------------------
 -- bob tries staff-only writes
@@ -131,7 +138,7 @@ select throws_ok(
         where id = '66666666-6666-6666-6666-666666666602' $$,
   '42501', null, 'direct ownership update is rejected (no table privilege)'
 );
-reset role;
+set role postgres;
 
 select * from finish();
 

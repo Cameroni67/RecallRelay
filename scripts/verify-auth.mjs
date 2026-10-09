@@ -14,9 +14,13 @@ function readDotEnv(path) {
 
 const fileEnv = { ...readDotEnv(".env.local"), ...readDotEnv(".env") };
 const get = (name) => process.env[name] || fileEnv[name] || "";
+function argValue(flag) {
+  const i = process.argv.indexOf(flag);
+  return i >= 0 ? process.argv[i + 1] : undefined;
+}
 
-const url = get("NEXT_PUBLIC_SUPABASE_URL").trim().replace(/\/$/, "");
-const key = get("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY").trim();
+const url = (argValue("--url") || get("NEXT_PUBLIC_SUPABASE_URL")).trim().replace(/\/$/, "");
+const key = (argValue("--key") || get("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")).trim();
 
 if (!url || !key) {
   console.log("verify:auth SKIPPED: Supabase not configured (Demo data mode).");

@@ -11,6 +11,7 @@
     "test": "vitest run",
     "verify:env": "node scripts/verify-env.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
+    "verify:isolation": "node scripts/verify-isolation.mjs",
     "db:test": "supabase test db",
     "db:types": "node scripts/gen-types.mjs",
     "db:reset": "supabase db reset",
