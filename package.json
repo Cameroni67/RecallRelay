@@ -8,9 +8,19 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify:env": "node scripts/verify-env.mjs",
+    "verify:auth": "node scripts/verify-auth.mjs",
+    "db:test": "supabase test db",
+    "db:types": "node scripts/gen-types.mjs",
+    "db:reset": "supabase db reset",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
     "@tailwindcss/postcss": "^4.1.11",
     "lucide-react": "^0.468.0",
     "next": "^15.5.3",
@@ -26,6 +36,7 @@
     "@types/react-dom": "^19.1.7",
     "eslint": "^9.33.0",
     "jsdom": "^26.1.0",
+    "supabase": "^2.120.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.1",
     "vitest": "^4.1.11"
