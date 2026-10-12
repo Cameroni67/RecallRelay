@@ -47,25 +47,52 @@ export function ChainStatusBadge({
   status,
   unitId,
   compact = false,
+  publicMode = false,
 }: {
   chain?: ProductChainState | null;
   status: ChainStatus;
   unitId?: string;
   compact?: boolean;
+  /** Public verification: retry via session-free GET, never writes, never downgrades. */
+  publicMode?: boolean;
 }) {
   const [retrying, setRetrying] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [liveConfirmed, setLiveConfirmed] = useState(false);
 
   /**
    * Chain-succeeds-but-DB-failed recovery. The transaction already landed, so
    * we must never re-register — we re-ask the server to reconcile the record
    * it should already be able to see on chain.
+   *
+   * In `publicMode` the retry is a session-free GET: it can only REFINE what
+   * is shown upward (pending/error → confirmed) and must never downgrade a
+   * server-observed record or hide safety information when the cluster is
+   * briefly unreachable.
    */
   async function retryVerification() {
     if (!unitId) return;
     setRetrying(true);
     setNote(null);
     try {
+      if (publicMode) {
+        const res = await fetch(`/api/chain/state?unitId=${encodeURIComponent(unitId)}`);
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body.registered) {
+          setLiveConfirmed(true);
+          setNote("Confirmed live on Solana. Safety information above is unaffected.");
+        } else if (res.ok) {
+          setNote(
+            "The cluster did not return this account on this attempt. The last server-confirmed record above stands — safety information is unaffected.",
+          );
+        } else {
+          setNote(
+            body.error ??
+              "Chain verification is temporarily unavailable. The safety information on this page is unaffected.",
+          );
+        }
+        return;
+      }
       const res = await fetch(`/api/products/${unitId}/reconcile-chain`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,33 +105,38 @@ export function ChainStatusBadge({
         setNote(body.error ?? "Still unable to confirm. The record will retry on next load.");
       }
     } catch {
-      setNote("Network error while retrying. The record will retry on next load.");
+      setNote(
+        publicMode
+          ? "Chain verification is temporarily unavailable. The safety information on this page is unaffected."
+          : "Network error while retrying. The record will retry on next load.",
+      );
     } finally {
       setRetrying(false);
     }
   }
 
-  const copy = COPY[status];
+  const shown: ChainStatus = liveConfirmed ? "synced" : status;
+  const copy = COPY[shown];
   const Icon =
-    status === "synced" ? ShieldCheck : status === "pending" ? Loader2 : status === "error" ? ShieldAlert : Link2Off;
+    shown === "synced" ? ShieldCheck : shown === "pending" ? Loader2 : shown === "error" ? ShieldAlert : Link2Off;
   const tone =
-    status === "synced"
+    shown === "synced"
       ? "text-safe"
-      : status === "pending"
+      : shown === "pending"
         ? "text-muted"
-        : status === "error"
+        : shown === "error"
           ? "text-urgent"
           : "text-muted";
   return (
     <div
-      data-chain-status={status}
+      data-chain-status={shown}
       className={`flex items-start gap-2 ${compact ? "" : "border border-line bg-[#f7f6f2] px-4 py-3"}`}
     >
-      <Icon size={compact ? 14 : 16} className={`mt-0.5 shrink-0 ${tone} ${status === "pending" ? "animate-pulse" : ""}`} />
+      <Icon size={compact ? 14 : 16} className={`mt-0.5 shrink-0 ${tone} ${shown === "pending" ? "animate-pulse" : ""}`} />
       <div>
         <p className={`font-semibold ${compact ? "text-[11px]" : "text-[13px]"}`}>{copy.label}</p>
         {!compact && <p className="mt-1 text-[12px] leading-5 text-muted">{copy.detail}</p>}
-        {status === "synced" && chain?.pda && (
+        {shown === "synced" && chain?.pda && (
           <p className="mt-1 text-[11px] text-muted">
             <a
               className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-ink"
@@ -129,7 +161,7 @@ export function ChainStatusBadge({
             )}
           </p>
         )}
-        {(status === "pending" || status === "error") && unitId && (
+        {(shown === "pending" || shown === "error") && unitId && (
           <button
             type="button"
             onClick={retryVerification}

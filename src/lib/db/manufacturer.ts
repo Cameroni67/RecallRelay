@@ -138,7 +138,8 @@ export async function getRecallCounts(
   recallId: string,
 ): Promise<{ affectedUnits: number; ownersReached: number }> {
   const supabase = await getServerClient();
-  if (!supabase) return { affectedUnits: 127, ownersReached: 127 };
+  // Demo fixture: the HeatCore recall affects 1 registered unit / 1 owner.
+  if (!supabase) return { affectedUnits: 1, ownersReached: 1 };
   const [units, owners] = await Promise.all([
     supabase.rpc("recall_affected_unit_count", { p_recall_id: recallId }),
     supabase.rpc("recall_affected_owner_ids", { p_recall_id: recallId }),
@@ -221,13 +222,14 @@ export async function issueRecall(input: {
   title: string;
   requiredAction: string;
   severity: string;
+  description?: string;
   scope:
     | { kind: "all_units" }
     | { kind: "serial_range"; from: string; to: string }
     | { kind: "selected_units"; unitIds: string[] };
 }): Promise<{ ok: true; id: string; affectedUnits: number } | { ok: false; error: string }> {
   const supabase = await getServerClient();
-  if (!supabase) return { ok: true, id: "demo-recall", affectedUnits: 127 };
+  if (!supabase) return { ok: true, id: "demo-recall", affectedUnits: 1 };
 
   const { data, error } = await supabase.rpc("issue_recall", {
     p_manufacturer_id: input.manufacturerId,
@@ -240,6 +242,7 @@ export async function issueRecall(input: {
     p_serial_to: input.scope.kind === "serial_range" ? input.scope.to : undefined,
     p_unit_ids:
       input.scope.kind === "selected_units" ? input.scope.unitIds : undefined,
+    p_description: input.description ?? undefined,
   });
   if (error) return { ok: false, error: friendlyRecallError(error.message) };
   const payload = data as { id?: string; affected_units?: number } | string | null;

@@ -28,7 +28,9 @@ export const demoRecall: RecallScopeRow = {
   model_id: "HC10",
   title: "Battery overheating risk",
   severity: "urgent",
-  required_action: "Stop using immediately.",
+  required_action: "Stop using immediately and contact the manufacturer.",
+  description:
+    "Battery cells in affected units can overheat during fast charging. Northstar is replacing affected units free of charge.",
   scope_kind: "all_units",
   serial_from: null,
   serial_to: null,
@@ -40,6 +42,6 @@ export const demoRecall: RecallScopeRow = {
 export const demoStats = {
   registeredUnits: 286,
   activeRecalls: 1,
-  ownersReached: 127,
+  ownersReached: 1,
   modelCount: 3,
 };

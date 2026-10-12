@@ -122,12 +122,14 @@ on conflict (id) do nothing;
 -- one active recall: selected units scope, HC10-2048 only
 -- ---------------------------------------------------------------------------
 insert into public.recalls (id, manufacturer_id, model_id, title, severity,
-                            required_action, scope_kind, status, issued_at,
-                            created_by, created_at, updated_at)
+                            required_action, description, scope_kind, status,
+                            issued_at, created_by, created_at, updated_at)
 values ('77777777-7777-7777-7777-777777777701',
         '44444444-4444-4444-4444-444444444444',
         '55555555-5555-5555-5555-555555555501',
-        'Battery overheating risk', 'urgent', 'Stop using immediately.',
+        'Battery overheating risk', 'urgent',
+        'Stop using immediately and contact the manufacturer.',
+        'Battery cells in affected units can overheat during fast charging. Northstar is replacing affected units free of charge.',
         'selected_units', 'active', timestamptz '2026-10-09 08:00:00+00',
         '33333333-3333-3333-3333-333333333333', now(), now())
 on conflict (id) do nothing;
@@ -147,7 +149,7 @@ values
   ('99999999-9999-9999-9999-999999999901', '22222222-2222-2222-2222-222222222222',
    '77777777-7777-7777-7777-777777777701', '66666666-6666-6666-6666-666666666601',
    'recall', 'urgent', 'Battery overheating risk',
-   'Required action: Stop using immediately.', null, timestamptz '2026-10-09 08:00:00+00'),
+   'Required action: Stop using immediately and contact the manufacturer.', null, timestamptz '2026-10-09 08:00:00+00'),
   ('99999999-9999-9999-9999-999999999902', '22222222-2222-2222-2222-222222222222',
    null, '66666666-6666-6666-6666-666666666601',
    'transfer', 'info', 'You now own HeatCore 10K',

@@ -1,8 +1,25 @@
-import { AlertTriangle, Check, ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
+import { severityConfig } from "@/components/severity";
 
-export function SafetyStatus({ recalled, compact = false }: { recalled: boolean; compact?: boolean }) {
-  if (recalled) return <span className={`inline-flex items-center gap-1.5 font-semibold text-urgent ${compact ? "text-[11px]" : "text-sm"}`}><AlertTriangle size={14} strokeWidth={1.8} />{compact ? "Urgent recall" : "Urgent recall — action required"}</span>;
-  return <span className={`inline-flex items-center gap-1.5 font-semibold text-safe ${compact ? "text-[11px]" : "text-sm"}`}><ShieldCheck size={15} strokeWidth={1.7} />{compact ? "No active recalls" : "No active recalls"}</span>;
+export function SafetyStatus({
+  recalled,
+  severity = "urgent",
+  compact = false,
+}: {
+  recalled: boolean;
+  severity?: string;
+  compact?: boolean;
+}) {
+  if (recalled) {
+    const { label, tone, Icon } = severityConfig(severity);
+    return (
+      <span className={`inline-flex items-center gap-1.5 font-semibold ${tone} ${compact ? "text-[11px]" : "text-sm"}`}>
+        <Icon size={14} strokeWidth={1.8} />
+        {compact ? label : `${label} — action required`}
+      </span>
+    );
+  }
+  return <span className={`inline-flex items-center gap-1.5 font-semibold text-safe ${compact ? "text-[11px]" : "text-sm"}`}><ShieldCheck size={15} strokeWidth={1.7} />No active recalls</span>;
 }
 
 export function VerificationBadge({ children = "Authentic registration" }: { children?: React.ReactNode }) {

@@ -7,6 +7,7 @@ import {
   findRecallForUnit,
   mapUnitToProduct,
   mapVerificationToProduct,
+  unitMatchesRecall,
   type ModelRow,
   type OwnershipRecordRow,
   type RecallScopeRow,
@@ -32,13 +33,32 @@ function fail(error: SupabaseError): never {
   throw new Error(`RecallRelay database error: ${error.message}`);
 }
 
+const RECALL_SELECT =
+  "id, manufacturer_id, model_id, title, severity, required_action, description, scope_kind, serial_from, serial_to, issued_at, updated_at, status, recall_units ( unit_id )";
+
 async function fetchActiveRecalls(supabase: ServerSupabase): Promise<RecallScopeRow[]> {
   const { data, error } = await supabase
     .from("recalls")
-    .select(
-      "id, manufacturer_id, model_id, title, severity, required_action, scope_kind, serial_from, serial_to, issued_at, status, recall_units ( unit_id )",
-    )
+    .select(RECALL_SELECT)
     .eq("status", "active");
+  if (error) fail(error);
+  return (data ?? []) as unknown as RecallScopeRow[];
+}
+
+/**
+ * Every recall the viewer may see that touches this unit — active and
+ * resolved (RLS: public/staff/owner-of-affected-unit) — for the passport
+ * timeline and recall history.
+ */
+async function fetchVisibleRecalls(
+  supabase: ServerSupabase,
+  statuses: ("active" | "closed")[],
+): Promise<RecallScopeRow[]> {
+  const { data, error } = await supabase
+    .from("recalls")
+    .select(RECALL_SELECT)
+    .in("status", statuses)
+    .order("issued_at", { ascending: true });
   if (error) fail(error);
   return (data ?? []) as unknown as RecallScopeRow[];
 }
@@ -178,7 +198,7 @@ export async function getPublicProduct(identifier: string): Promise<Product | nu
   return mapVerificationToProduct(row);
 }
 
-/** Passport timeline for a unit (ownership records + recalls). */
+/** Passport timeline for a unit (ownership records + active/resolved recalls). */
 export async function getUnitTimeline(unitId: string): Promise<TimelineEntry[]> {
   const supabase = await getServerClient();
   if (!supabase) return demoTimeline;
@@ -193,7 +213,7 @@ export async function getUnitTimeline(unitId: string): Promise<TimelineEntry[]> 
 
   const row = unit as unknown as UnitWithModel;
   const [recalls, ownership] = await Promise.all([
-    fetchActiveRecalls(supabase),
+    fetchVisibleRecalls(supabase, ["active", "closed"]),
     fetchOwnershipRecords(supabase, [row.id]),
   ]);
   const names = await fetchProfileNames(
@@ -206,7 +226,7 @@ export async function getUnitTimeline(unitId: string): Promise<TimelineEntry[]> 
     model: row.product_models,
     ownershipRecords: ownership,
     profileNames: names,
-    recall: findRecallForUnit(row, recalls),
+    recalls: recalls.filter((recall) => unitMatchesRecall(row, recall)),
   });
 }
 
@@ -295,9 +315,7 @@ export async function listManufacturerRecalls(
   if (!supabase) return [];
   const query = supabase
     .from("recalls")
-    .select(
-      "id, manufacturer_id, model_id, title, severity, required_action, scope_kind, serial_from, serial_to, issued_at, status, recall_units ( unit_id )",
-    )
+    .select(RECALL_SELECT)
     .order("issued_at", { ascending: false });
   const { data, error } = manufacturerId
     ? await query.eq("manufacturer_id", manufacturerId)
@@ -314,13 +332,83 @@ export async function findManufacturerRecall(
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("recalls")
-    .select(
-      "id, manufacturer_id, model_id, title, severity, required_action, scope_kind, serial_from, serial_to, issued_at, status, recall_units ( unit_id )",
-    )
+    .select(RECALL_SELECT)
     .eq("id", recallId)
     .maybeSingle();
   if (error) fail(error);
   if (!data) return null;
   if (manufacturerId && data.manufacturer_id !== manufacturerId) return null;
   return data as unknown as RecallScopeRow;
+}
+
+export type OwnerRecallDetail = {
+  recall: RecallScopeRow;
+  products: Product[];
+  manufacturerName: string | null;
+};
+
+/**
+ * Owner-facing recall detail: one recall (RLS decides visibility — active,
+ * own workspace, or resolved and still affecting a unit the viewer owns)
+ * plus the viewer's affected product passports.
+ */
+export async function findOwnerRecall(
+  viewerId: string | null,
+  recallId: string,
+): Promise<OwnerRecallDetail | null> {
+  const supabase = await getServerClient();
+  if (!supabase || !viewerId) return null;
+
+  const { data, error } = await supabase
+    .from("recalls")
+    .select(RECALL_SELECT)
+    .eq("id", recallId)
+    .maybeSingle();
+  if (error) fail(error);
+  if (!data) return null;
+  const recall = data as unknown as RecallScopeRow;
+
+  const { data: units, error: unitsError } = await supabase
+    .from("product_units")
+    .select(UNIT_SELECT)
+    .eq("current_owner_profile_id", viewerId);
+  if (unitsError) fail(unitsError);
+
+  const rows = ((units ?? []) as unknown as UnitWithModel[]).filter((unit) =>
+    unitMatchesRecall(unit, recall),
+  );
+
+  const { data: manufacturer } = await supabase
+    .from("manufacturers")
+    .select("name")
+    .eq("id", recall.manufacturer_id)
+    .maybeSingle();
+
+  return {
+    recall,
+    manufacturerName: (manufacturer as { name: string } | null)?.name ?? null,
+    products: rows.map((unit) =>
+      mapUnitToProduct({
+        unit,
+        model: unit.product_models,
+        viewerId,
+        recall: findRecallForUnit(unit, [recall]),
+      }),
+    ),
+  };
+}
+
+/** First registered serial for a model — for the manufacturer "public record" link. */
+export async function firstUnitSerialForModel(modelId: string): Promise<string | null> {
+  const supabase = await getServerClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("product_units")
+    .select("serial_number")
+    .eq("model_id", modelId)
+    .order("registered_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) fail(error);
+  return data?.serial_number ?? null;
 }

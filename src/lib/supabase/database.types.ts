@@ -115,14 +115,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "body": string | null,"created_at": string,"id": string,"kind": string,"profile_id": string,"read_at": string | null,"recall_id": string | null,"severity": string,"title": string,"unit_id": string | null
+                    "body": string | null,"created_at": string,"dedupe_key": string | null,"id": string,"kind": string,"profile_id": string,"read_at": string | null,"recall_id": string | null,"severity": string,"title": string,"unit_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"profile_id": string,"read_at"?: string | null,"recall_id"?: string | null,"severity"?: string,"title": string,"unit_id"?: string | null
+                    "body"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"id"?: string,"kind"?: string,"profile_id": string,"read_at"?: string | null,"recall_id"?: string | null,"severity"?: string,"title": string,"unit_id"?: string | null
                   }
                   Update: {
-                    "body"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"profile_id"?: string,"read_at"?: string | null,"recall_id"?: string | null,"severity"?: string,"title"?: string,"unit_id"?: string | null
+                    "body"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"id"?: string,"kind"?: string,"profile_id"?: string,"read_at"?: string | null,"recall_id"?: string | null,"severity"?: string,"title"?: string,"unit_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -307,14 +307,14 @@ isOneToOne: false
                   ]
                 },"recalls": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"issued_at": string | null,"manufacturer_id": string,"model_id": string | null,"required_action": string,"scope_kind": string,"serial_from": string | null,"serial_to": string | null,"severity": string,"status": string,"title": string,"updated_at": string
+                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"issued_at": string | null,"manufacturer_id": string,"model_id": string | null,"required_action": string,"scope_kind": string,"serial_from": string | null,"serial_to": string | null,"severity": string,"status": string,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"issued_at"?: string | null,"manufacturer_id": string,"model_id"?: string | null,"required_action": string,"scope_kind"?: string,"serial_from"?: string | null,"serial_to"?: string | null,"severity"?: string,"status"?: string,"title": string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"issued_at"?: string | null,"manufacturer_id": string,"model_id"?: string | null,"required_action": string,"scope_kind"?: string,"serial_from"?: string | null,"serial_to"?: string | null,"severity"?: string,"status"?: string,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"issued_at"?: string | null,"manufacturer_id"?: string,"model_id"?: string | null,"required_action"?: string,"scope_kind"?: string,"serial_from"?: string | null,"serial_to"?: string | null,"severity"?: string,"status"?: string,"title"?: string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"issued_at"?: string | null,"manufacturer_id"?: string,"model_id"?: string | null,"required_action"?: string,"scope_kind"?: string,"serial_from"?: string | null,"serial_to"?: string | null,"severity"?: string,"status"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -363,6 +363,7 @@ isOneToOne: false
 { Args: { "p_unit_id": string }; Returns: {
               "created_at": string,
 "created_by": string | null,
+"description": string | null,
 "id": string,
 "issued_at": string | null,
 "manufacturer_id": string,
@@ -408,6 +409,9 @@ isOneToOne: false
       } },
 "auth_wallet_address":
 { Args: { "p_user_id"?: string }; Returns: string
+                           },
+"close_recall":
+{ Args: { "p_recall_id": string }; Returns: Json
                            },
 "create_manufacturer":
 { Args: { "p_name": string,"p_slug": string }; Returns: {
@@ -481,11 +485,11 @@ isOneToOne: false
 { Args: { "p_manufacturer_id": string }; Returns: boolean
                            },
 "issue_recall":
-{ Args: { "p_manufacturer_id": string,"p_model_id": string,"p_required_action": string,"p_scope_kind"?: string,"p_serial_from"?: string,"p_serial_to"?: string,"p_severity": string,"p_title": string,"p_unit_ids"?: (string)[] }; Returns: Json
+{ Args: { "p_description"?: string,"p_manufacturer_id": string,"p_model_id": string,"p_required_action": string,"p_scope_kind"?: string,"p_serial_from"?: string,"p_serial_to"?: string,"p_severity": string,"p_title": string,"p_unit_ids"?: (string)[] }; Returns: Json
                            },
 "lookup_public_product":
 { Args: { "p_identifier": string }; Returns: {
-              "category": string,"chain_owner": string,"chain_pda": string,"chain_program_id": string,"chain_state": string,"chain_synced_at": string,"chain_transfer_count": number,"chain_tx_signature": string,"image_path": string,"is_recalled": boolean,"manufacturer_id": string,"manufacturer_name": string,"manufacturer_verified": boolean,"model_id": string,"model_name": string,"model_sku": string,"recall_id": string,"recall_issued_at": string,"recall_required_action": string,"recall_severity": string,"recall_title": string,"serial_number": string,"unit_id": string
+              "category": string,"chain_owner": string,"chain_pda": string,"chain_program_id": string,"chain_state": string,"chain_synced_at": string,"chain_transfer_count": number,"chain_tx_signature": string,"history": Json,"image_path": string,"is_recalled": boolean,"manufacturer_id": string,"manufacturer_name": string,"manufacturer_verified": boolean,"model_id": string,"model_name": string,"model_sku": string,"recall_id": string,"recall_issued_at": string,"recall_required_action": string,"recall_severity": string,"recall_title": string,"registered_at": string,"serial_number": string,"unit_id": string
             }[]
                            },
 "manufacturer_member_role":
@@ -499,6 +503,12 @@ isOneToOne: false
                            },
 "recall_affected_unit_count":
 { Args: { "p_recall_id": string }; Returns: number
+                           },
+"recall_affects_current_owner":
+{ Args: { "p_profile_id": string,"p_recall_id": string }; Returns: boolean
+                           },
+"recall_matches_unit":
+{ Args: { "p_recall_id": string,"p_unit_id": string }; Returns: boolean
                            },
 "recallrelay_auth_diagnostic":
 { Args: Record<PropertyKey, never>; Returns: Json

@@ -165,7 +165,7 @@ insert into public.recalls (id, manufacturer_id, model_id, title, severity,
 values ('77777777-7777-7777-7777-777777777709',
         '44444444-4444-4444-4444-444444444444',
         '55555555-5555-5555-5555-555555555502',
-        'Draft notice', 'info', 'Ignore for now', 'all_units', 'draft', null, null);
+        'Draft notice', 'advisory', 'Ignore for now', 'all_units', 'draft', null, null);
 
 select is(
   (select is_recalled from public.lookup_public_product('TCM-8831')),

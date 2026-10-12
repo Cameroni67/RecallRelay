@@ -1,5 +1,6 @@
-import type { Product, ProductChainState } from "@/lib/data";
+import type { Product, ProductChainState, ProductRecall, PublicHistoryEntry, RecallSeverity } from "@/lib/data";
 import type { TimelineEntry } from "@/components/timeline";
+import type { Json } from "@/lib/supabase/database.types";
 
 export type VerificationRow = {
   unit_id: string | null;
@@ -25,6 +26,8 @@ export type VerificationRow = {
   chain_tx_signature?: string | null;
   chain_synced_at?: string | null;
   chain_program_id?: string | null;
+  registered_at?: string | null;
+  history?: Json;
 };
 
 export type RecallScopeRow = {
@@ -34,10 +37,12 @@ export type RecallScopeRow = {
   title: string;
   severity: string;
   required_action: string;
+  description?: string | null;
   scope_kind: string;
   serial_from: string | null;
   serial_to: string | null;
   issued_at: string | null;
+  updated_at?: string | null;
   status: string;
   recall_units?: { unit_id: string }[] | null;
 };
@@ -115,9 +120,32 @@ function manufacturerName(model: ModelRow | null): string {
   return rel?.name ?? "Unknown maker";
 }
 
-/** Mirrors public.active_recalls_for_unit() in Postgres. */
+/** Human-readable recall severity copy (text, never color alone). */
+export function recallSeverityLabel(severity: string): string {
+  if (severity === "important") return "Important recall";
+  if (severity === "advisory") return "Advisory notice";
+  return "Urgent recall";
+}
+
+function toSeverity(severity: string): RecallSeverity {
+  return severity === "important" || severity === "advisory" ? severity : "urgent";
+}
+
+function recallState(recall: RecallScopeRow | null | undefined): ProductRecall | null {
+  if (!recall) return null;
+  return {
+    id: recall.id,
+    title: recall.title,
+    severity: toSeverity(recall.severity),
+    requiredAction: recall.required_action,
+    issuedAt: recall.issued_at ?? "",
+    description: recall.description ?? null,
+  };
+}
+
+/** Mirrors public.recall_matches_unit() in Postgres (scope only, drafts never match). */
 export function unitMatchesRecall(unit: UnitRow, recall: RecallScopeRow): boolean {
-  if (recall.status !== "active") return false;
+  if (recall.status === "draft") return false;
   if (recall.scope_kind === "all_units") return unit.model_id === recall.model_id;
   if (recall.scope_kind === "serial_range") {
     return (
@@ -133,11 +161,14 @@ export function unitMatchesRecall(unit: UnitRow, recall: RecallScopeRow): boolea
   return false;
 }
 
+/** The most recent ACTIVE recall for safety status (resolves are excluded). */
 export function findRecallForUnit(
   unit: UnitRow,
   recalls: RecallScopeRow[],
 ): RecallScopeRow | null {
-  const matches = recalls.filter((recall) => unitMatchesRecall(unit, recall));
+  const matches = recalls.filter(
+    (recall) => recall.status === "active" && unitMatchesRecall(unit, recall),
+  );
   if (!matches.length) return null;
   matches.sort((a, b) => (b.issued_at ?? "").localeCompare(a.issued_at ?? ""));
   return matches[0];
@@ -177,11 +208,11 @@ export function mapUnitToProduct(args: MapUnitArgs): Product {
   const ownedByViewer = Boolean(viewerId && unit.current_owner_profile_id === viewerId);
 
   let safety: Product["safety"] = "clear";
-  if (recall) safety = "recalled";
+  if (recall && recall.status === "active") safety = "recalled";
 
   let lastAction = "No active recalls";
-  if (recall) {
-    lastAction = `${recall.severity === "urgent" ? "Urgent recall" : "Recall issued"} · ${formatDateShort(recall.issued_at)}`;
+  if (recall && recall.status === "active") {
+    lastAction = `${recallSeverityLabel(recall.severity)} · ${formatDateShort(recall.issued_at)}`;
   } else if (latestActivity) {
     const label =
       latestActivity.kind === "transferred"
@@ -205,6 +236,7 @@ export function mapUnitToProduct(args: MapUnitArgs): Product {
     safety,
     lastAction,
     chain: unitChainState(unit),
+    recall: recall && recall.status === "active" ? recallState(recall) : null,
   };
 }
 
@@ -213,13 +245,16 @@ export type TimelineArgs = {
   model: ModelRow | null;
   ownershipRecords: OwnershipRecordRow[];
   profileNames: Map<string, string>;
+  /** Single recall (legacy). Prefer `recalls` to include resolved recalls. */
   recall?: RecallScopeRow | null;
+  /** Every recall scoped to this unit (active + resolved) for the timeline. */
+  recalls?: RecallScopeRow[];
   registeredAt?: string | null;
 };
 
 /** Builds the passport timeline in chronological order. */
 export function buildTimeline(args: TimelineArgs): TimelineEntry[] {
-  const { unit, model, ownershipRecords, profileNames, recall, registeredAt } = args;
+  const { unit, model, ownershipRecords, profileNames, recall, recalls, registeredAt } = args;
   const maker = manufacturerName(model);
   const entries: { at: string; entry: TimelineEntry }[] = [];
 
@@ -271,23 +306,60 @@ export function buildTimeline(args: TimelineArgs): TimelineEntry[] {
       });
     });
 
-  if (recall) {
-    entries.push({
-      at: recall.issued_at ?? new Date().toISOString(),
-      entry: {
-        title: "Recall issued",
-        date: formatDateCompact(recall.issued_at),
-        detail: `${recall.title} applies.`,
-      },
+  const timelineRecalls = recalls ?? (recall ? [recall] : []);
+  timelineRecalls
+    .filter((item) => item.status !== "draft" && Boolean(item.issued_at))
+    .forEach((item) => {
+      entries.push({
+        at: item.issued_at ?? new Date().toISOString(),
+        entry: {
+          title: "Recall issued",
+          date: formatDateCompact(item.issued_at),
+          detail: `${item.title} applies.`,
+        },
+      });
+      if (item.status === "closed") {
+        entries.push({
+          at: item.updated_at ?? item.issued_at ?? new Date().toISOString(),
+          entry: {
+            title: "Recall resolved",
+            date: formatDateCompact(item.updated_at ?? item.issued_at),
+            detail: `${item.title} was resolved by ${maker}.`,
+          },
+        });
+      }
     });
-  }
 
   return entries.sort((a, b) => a.at.localeCompare(b.at)).map((item) => item.entry);
 }
 
-/** Maps a v_public_product_verification row onto the Phase 1 Product shape. */
+/** Normalizes JSONB public history into validated, privacy-safe entries. */
+function toPublicHistory(value: Json | undefined): PublicHistoryEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (entry): entry is PublicHistoryEntry =>
+      typeof entry === "object" &&
+      entry !== null &&
+      !Array.isArray(entry) &&
+      typeof (entry as { kind?: unknown }).kind === "string" &&
+      typeof (entry as { at?: unknown }).at === "string",
+  );
+}
+
+/** Maps a lookup_public_product row onto the Phase 1 Product shape. */
 export function mapVerificationToProduct(row: VerificationRow): Product {
   const recalled = Boolean(row.is_recalled);
+  const recall: ProductRecall | null =
+    recalled && row.recall_id && row.recall_title
+      ? {
+          id: row.recall_id,
+          title: row.recall_title,
+          severity: toSeverity(row.recall_severity ?? "urgent"),
+          requiredAction: row.recall_required_action ?? "",
+          issuedAt: row.recall_issued_at ?? "",
+          description: null,
+        }
+      : null;
   return {
     id: row.unit_id ?? "",
     maker: row.manufacturer_name ?? "Unknown maker",
@@ -299,10 +371,14 @@ export function mapVerificationToProduct(row: VerificationRow): Product {
     owner: "Verified",
     ownerSince: "",
     safety: recalled ? "recalled" : "clear",
-    lastAction: recalled
-      ? `Urgent recall · ${formatDateShort(row.recall_issued_at)}`
+    lastAction: recall
+      ? `${recallSeverityLabel(recall.severity)} · ${formatDateShort(recall.issuedAt)}`
       : "No active recalls",
     chain: verificationChainState(row),
+    recall,
+    history: toPublicHistory(row.history),
+    registeredAt: row.registered_at ?? null,
+    makerVerified: Boolean(row.manufacturer_verified),
   };
 }
 

@@ -16,6 +16,8 @@ describe("ProductPassport", () => {
     render(<ProductPassport product={primaryProduct} />);
     expect(screen.getByRole("heading", { name: "HeatCore 10K" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Stop using immediately");
-    expect(within(screen.getByRole("alert")).getByRole("link", { name: "View Recall" })).toHaveAttribute("href", "/app/recalls");
+    expect(
+      within(screen.getByRole("alert")).getByRole("link", { name: "View Recall" }),
+    ).toHaveAttribute("href", `/app/recalls/${primaryProduct.recall!.id}`);
   });
 });

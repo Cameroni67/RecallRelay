@@ -1,8 +1,11 @@
 // GET /api/chain/state?unitId=... or ?manufacturerId=...
 //
 // Returns what the chain currently says, read server-side. Public information
-// (PDAs and on-chain owner wallets are public by nature), but it requires a
-// session so the endpoint cannot be used as a general cluster proxy.
+// (PDAs and on-chain owner wallets are public by nature). Signed-in users may
+// read any unit or their manufacturer; a session-free read is allowed for a
+// SINGLE unit only (no owner wallet in the response) so the public
+// verification page has a controlled retry path without turning this into a
+// general cluster proxy.
 
 import { NextResponse } from "next/server";
 import { getServerClient } from "@/lib/supabase/server";
@@ -18,16 +21,19 @@ export async function GET(request: Request) {
   }
   const supabase = await getServerClient();
   if (!supabase) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-  }
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData?.user) {
-    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+    return NextResponse.json({ error: "Not available." }, { status: 401 });
   }
 
   const url = new URL(request.url);
   const unitId = url.searchParams.get("unitId");
   const manufacturerId = url.searchParams.get("manufacturerId");
+
+  const { data: userData } = await supabase.auth.getUser();
+  const hasSession = Boolean(userData?.user);
+  const publicUnitRead = !hasSession && !manufacturerId && Boolean(unitId);
+  if (!hasSession && !publicUnitRead) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
 
   if (manufacturerId && !unitId) {
     const observed = await observeManufacturer(manufacturerId);
@@ -43,6 +49,36 @@ export async function GET(request: Request) {
 
   if (!unitId) {
     return NextResponse.json({ error: "unitId or manufacturerId is required." }, { status: 400 });
+  }
+
+  if (publicUnitRead) {
+    // Session-free path: resolve the unit through the public lookup (anon
+    // grant, security definer) and return chain state WITHOUT the owner
+    // wallet. Session-free callers can retry a flaky chain read but can
+    // never enumerate units or read profiles.
+    const { data: rows, error: lookupError } = await supabase.rpc("lookup_public_product", {
+      p_identifier: unitId,
+    });
+    if (lookupError || !rows?.[0]) {
+      return NextResponse.json({ error: "unknown product unit" }, { status: 404 });
+    }
+    const row = rows[0] as { unit_id: string; manufacturer_id: string };
+    const observed = await observeProduct(row.unit_id, row.manufacturer_id);
+    let slot: number | null = null;
+    try {
+      slot = await getConnection().getSlot("confirmed");
+    } catch {
+      slot = null;
+    }
+    return NextResponse.json({
+      kind: "product",
+      programId: PROGRAM_ID,
+      clusterSlot: slot,
+      registered: Boolean(observed),
+      pda: observed?.pda ?? null,
+      transferCount: observed?.transferCount ?? null,
+      isActive: observed?.isActive ?? null,
+    });
   }
 
   const { data: unit } = await supabase
