@@ -7,5 +7,5 @@ import { listModelOptions } from "@/lib/db/manufacturer";
 export default async function RegisterUnitPage() {
   const ctx = await requireManufacturer();
   const models = await listModelOptions(ctx.manufacturer.id);
-  return <AppShell manufacturer workspaceName={ctx.workspaceName}><PageHeading eyebrow={`${ctx.manufacturer.name} · Unit registry`} title="Register Product Unit" description="Create a product passport for a single physical unit." /><RegisterFlow models={models} live={!ctx.demo} /></AppShell>;
+  return <AppShell manufacturer workspaceName={ctx.workspaceName}><PageHeading eyebrow={`${ctx.manufacturer.name} · Unit registry`} title="Register Product Unit" description="Create a product passport for a single physical unit." /><RegisterFlow models={models} live={!ctx.demo} sessionWallet={ctx.profile.wallet_address} /></AppShell>;
 }

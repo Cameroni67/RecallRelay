@@ -10,6 +10,18 @@ export type Product = {
   ownerSince: string;
   safety: "clear" | "recalled" | "transferred";
   lastAction: string;
+  /** Phase 3: server-observed Solana state for this unit, when known. */
+  chain?: ProductChainState | null;
+};
+
+/** Truthful on-chain state, as last observed by the server (never client-set). */
+export type ProductChainState = {
+  programId: string;
+  pda: string | null;
+  owner: string | null;
+  transferCount: number;
+  txSignature: string | null;
+  syncedAt: string | null;
 };
 
 export const products: Product[] = [

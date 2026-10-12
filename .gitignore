@@ -5,3 +5,9 @@ coverage
 .env*
 !.env.example
 *.tsbuildinfo
+solana/recallrelay-program/program-keypair.json
+solana/recallrelay-program/target/
+solana/recallrelay-program/.cargo/
+# Emitted JS from the LiteSVM test runner (tsc emit for the program suite).
+.sbf-test-build/
+.sbf-test-run/

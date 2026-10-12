@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:sbf": "node scripts/test-sbf.mjs",
     "verify:env": "node scripts/verify-env.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
     "verify:isolation": "node scripts/verify-isolation.mjs",
@@ -30,6 +31,7 @@
     "tailwindcss": "^4.1.11"
   },
   "devDependencies": {
+    "@solana/web3.js": "^1.99.0",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.15.30",
@@ -37,6 +39,7 @@
     "@types/react-dom": "^19.1.7",
     "eslint": "^9.33.0",
     "jsdom": "^26.1.0",
+    "litesvm": "^1.6.0",
     "supabase": "^2.120.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.71.1",

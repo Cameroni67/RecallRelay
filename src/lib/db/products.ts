@@ -22,6 +22,7 @@ type UnitWithModel = UnitRow & { product_models: ModelRow | null };
 
 const UNIT_SELECT = `
   id, model_id, serial_number, registered_at, current_owner_profile_id,
+  chain_pda, chain_owner, chain_transfer_count, chain_state, chain_tx_signature, chain_synced_at, chain_program_id,
   product_models ( id, sku, name, category, image_path, manufacturer_id, manufacturers ( name ) )
 `;
 

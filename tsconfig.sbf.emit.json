@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./.sbf-test-build",
+    "rootDir": "./src/lib/solana",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": false,
+    "noEmitOnError": false
+  },
+  "include": ["src/lib/solana/**/*.ts", "src/lib/solana/**/*.mts"]
+}

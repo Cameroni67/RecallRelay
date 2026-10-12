@@ -101,14 +101,14 @@ isOneToOne: false
                   ]
                 },"manufacturers": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"logo_url": string | null,"name": string,"slug": string,"updated_at": string,"verified": boolean,"website": string | null
+                    "chain_authority": string | null,"chain_pda": string | null,"chain_program_id": string | null,"chain_state": string,"chain_synced_at": string | null,"created_at": string,"created_by": string | null,"id": string,"logo_url": string | null,"name": string,"slug": string,"updated_at": string,"verified": boolean,"website": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"logo_url"?: string | null,"name": string,"slug": string,"updated_at"?: string,"verified"?: boolean,"website"?: string | null
+                    "chain_authority"?: string | null,"chain_pda"?: string | null,"chain_program_id"?: string | null,"chain_state"?: string,"chain_synced_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"logo_url"?: string | null,"name": string,"slug": string,"updated_at"?: string,"verified"?: boolean,"website"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"logo_url"?: string | null,"name"?: string,"slug"?: string,"updated_at"?: string,"verified"?: boolean,"website"?: string | null
+                    "chain_authority"?: string | null,"chain_pda"?: string | null,"chain_program_id"?: string | null,"chain_state"?: string,"chain_synced_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"logo_url"?: string | null,"name"?: string,"slug"?: string,"updated_at"?: string,"verified"?: boolean,"website"?: string | null
                   }
                   Relationships: [
                     
@@ -229,14 +229,14 @@ isOneToOne: false
                   ]
                 },"product_units": {
                   Row: {
-                    "created_at": string,"current_owner_profile_id": string | null,"id": string,"manufactured_at": string | null,"model_id": string,"registered_at": string,"serial_number": string,"updated_at": string
+                    "chain_owner": string | null,"chain_pda": string | null,"chain_program_id": string | null,"chain_state": string,"chain_synced_at": string | null,"chain_transfer_count": number,"chain_tx_signature": string | null,"created_at": string,"current_owner_profile_id": string | null,"id": string,"manufactured_at": string | null,"model_id": string,"registered_at": string,"serial_number": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"current_owner_profile_id"?: string | null,"id"?: string,"manufactured_at"?: string | null,"model_id": string,"registered_at"?: string,"serial_number": string,"updated_at"?: string
+                    "chain_owner"?: string | null,"chain_pda"?: string | null,"chain_program_id"?: string | null,"chain_state"?: string,"chain_synced_at"?: string | null,"chain_transfer_count"?: number,"chain_tx_signature"?: string | null,"created_at"?: string,"current_owner_profile_id"?: string | null,"id"?: string,"manufactured_at"?: string | null,"model_id": string,"registered_at"?: string,"serial_number": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"current_owner_profile_id"?: string | null,"id"?: string,"manufactured_at"?: string | null,"model_id"?: string,"registered_at"?: string,"serial_number"?: string,"updated_at"?: string
+                    "chain_owner"?: string | null,"chain_pda"?: string | null,"chain_program_id"?: string | null,"chain_state"?: string,"chain_synced_at"?: string | null,"chain_transfer_count"?: number,"chain_tx_signature"?: string | null,"created_at"?: string,"current_owner_profile_id"?: string | null,"id"?: string,"manufactured_at"?: string | null,"model_id"?: string,"registered_at"?: string,"serial_number"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -382,12 +382,41 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"apply_chain_transfer":
+{ Args: { "p_chain_owner": string,"p_new_owner_wallet": string,"p_transfer_count": number,"p_tx_signature": string,"p_unit_id": string }; Returns: {
+              "chain_owner": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"chain_transfer_count": number,
+"chain_tx_signature": string | null,
+"created_at": string,
+"current_owner_profile_id": string | null,
+"id": string,
+"manufactured_at": string | null,
+"model_id": string,
+"registered_at": string,
+"serial_number": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "product_units"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "auth_wallet_address":
 { Args: { "p_user_id"?: string }; Returns: string
                            },
 "create_manufacturer":
 { Args: { "p_name": string,"p_slug": string }; Returns: {
-              "created_at": string,
+              "chain_authority": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"created_at": string,
 "created_by": string | null,
 "id": string,
 "logo_url": string | null,
@@ -456,7 +485,7 @@ isOneToOne: false
                            },
 "lookup_public_product":
 { Args: { "p_identifier": string }; Returns: {
-              "category": string,"image_path": string,"is_recalled": boolean,"manufacturer_id": string,"manufacturer_name": string,"manufacturer_verified": boolean,"model_id": string,"model_name": string,"model_sku": string,"recall_id": string,"recall_issued_at": string,"recall_required_action": string,"recall_severity": string,"recall_title": string,"serial_number": string,"unit_id": string
+              "category": string,"chain_owner": string,"chain_pda": string,"chain_program_id": string,"chain_state": string,"chain_synced_at": string,"chain_transfer_count": number,"chain_tx_signature": string,"image_path": string,"is_recalled": boolean,"manufacturer_id": string,"manufacturer_name": string,"manufacturer_verified": boolean,"model_id": string,"model_name": string,"model_sku": string,"recall_id": string,"recall_issued_at": string,"recall_required_action": string,"recall_severity": string,"recall_title": string,"serial_number": string,"unit_id": string
             }[]
                            },
 "manufacturer_member_role":
@@ -477,9 +506,63 @@ isOneToOne: false
 "recallrelay_health":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"reconcile_manufacturer_chain_state":
+{ Args: { "p_authority": string,"p_manufacturer_id": string,"p_pda": string,"p_program_id": string,"p_state": string,"p_tx_signature"?: string }; Returns: {
+              "chain_authority": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"logo_url": string | null,
+"name": string,
+"slug": string,
+"updated_at": string,
+"verified": boolean,
+"website": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "manufacturers"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"reconcile_product_chain_state":
+{ Args: { "p_owner": string,"p_pda": string,"p_program_id": string,"p_state": string,"p_transfer_count": number,"p_tx_signature"?: string,"p_unit_id": string }; Returns: {
+              "chain_owner": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"chain_transfer_count": number,
+"chain_tx_signature": string | null,
+"created_at": string,
+"current_owner_profile_id": string | null,
+"id": string,
+"manufactured_at": string | null,
+"model_id": string,
+"registered_at": string,
+"serial_number": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "product_units"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "register_product_unit":
 { Args: { "p_initial_owner_wallet"?: string,"p_manufactured_at"?: string,"p_model_id": string,"p_serial_number": string }; Returns: {
-              "created_at": string,
+              "chain_owner": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"chain_transfer_count": number,
+"chain_tx_signature": string | null,
+"created_at": string,
 "current_owner_profile_id": string | null,
 "id": string,
 "manufactured_at": string | null,
@@ -496,7 +579,14 @@ isOneToOne: false
       } },
 "transfer_product_ownership":
 { Args: { "p_note"?: string,"p_recipient_wallet": string,"p_unit_id": string }; Returns: {
-              "created_at": string,
+              "chain_owner": string | null,
+"chain_pda": string | null,
+"chain_program_id": string | null,
+"chain_state": string,
+"chain_synced_at": string | null,
+"chain_transfer_count": number,
+"chain_tx_signature": string | null,
+"created_at": string,
 "current_owner_profile_id": string | null,
 "id": string,
 "manufactured_at": string | null,

@@ -11,5 +11,5 @@ export default async function TransferPage({ params }: { params: Promise<{ id: s
   const owner = await requireOwner();
   const product = await findProductByIdOrSerial(id, owner.userId);
   if (!product) notFound();
-  return <AppShell workspaceName={owner.workspaceName}><PageHeading eyebrow="Product ownership" title="Transfer Product" description="Review the product and recipient before handing over its ownership record." /><TransferFlow product={product} unitId={product.id} live={!isDemoMode()} /></AppShell>;
+  return <AppShell workspaceName={owner.workspaceName}><PageHeading eyebrow="Product ownership" title="Transfer Product" description="Review the product and recipient before handing over its ownership record." /><TransferFlow product={product} unitId={product.id} live={!isDemoMode()} sessionWallet={owner.profile.wallet_address} /></AppShell>;
 }

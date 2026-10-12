@@ -15,7 +15,7 @@ describe("public routes", () => {
     const route = await VerifyPage({ params: Promise.resolve({ id: "HC10-2048" }) });
     render(route);
     expect(screen.getByRole("heading", { name: "Product verification" })).toBeInTheDocument();
-    expect(screen.getByText("Current ownership verified")).toBeInTheDocument();
+    expect(screen.getByText("Current ownership recorded")).toBeInTheDocument();
     expect(screen.getByText("URGENT RECALL")).toBeInTheDocument();
     expect(screen.queryByText("Bob Chen")).not.toBeInTheDocument();
   });

@@ -1,4 +1,4 @@
-import type { Product } from "@/lib/data";
+import type { Product, ProductChainState } from "@/lib/data";
 import type { TimelineEntry } from "@/components/timeline";
 
 export type VerificationRow = {
@@ -18,6 +18,13 @@ export type VerificationRow = {
   recall_severity: string | null;
   recall_required_action: string | null;
   recall_issued_at: string | null;
+  chain_state?: string | null;
+  chain_pda?: string | null;
+  chain_owner?: string | null;
+  chain_transfer_count?: number | null;
+  chain_tx_signature?: string | null;
+  chain_synced_at?: string | null;
+  chain_program_id?: string | null;
 };
 
 export type RecallScopeRow = {
@@ -41,6 +48,13 @@ export type UnitRow = {
   serial_number: string;
   registered_at: string;
   current_owner_profile_id: string | null;
+  chain_pda?: string | null;
+  chain_owner?: string | null;
+  chain_transfer_count?: number | null;
+  chain_state?: string | null;
+  chain_tx_signature?: string | null;
+  chain_synced_at?: string | null;
+  chain_program_id?: string | null;
 };
 
 export type ModelRow = {
@@ -129,6 +143,25 @@ export function findRecallForUnit(
   return matches[0];
 }
 
+/**
+ * Build the truthful chain-state object from a unit row, or null when the
+ * unit has never been registered on chain. Only `synced` units expose an
+ * owner/count that has been observed by the server; `pending` units expose
+ * the PDA but no confirmed owner yet.
+ */
+export function unitChainState(unit: UnitRow): ProductChainState | null {
+  if (!unit.chain_state || unit.chain_state === "unregistered") return null;
+  const synced = unit.chain_state === "synced";
+  return {
+    programId: unit.chain_program_id ?? "",
+    pda: unit.chain_pda || null,
+    owner: synced ? (unit.chain_owner || null) : null,
+    transferCount: synced ? (unit.chain_transfer_count ?? 0) : 0,
+    txSignature: synced ? (unit.chain_tx_signature || null) : null,
+    syncedAt: synced ? (unit.chain_synced_at || null) : null,
+  };
+}
+
 export type MapUnitArgs = {
   unit: UnitRow;
   model: ModelRow | null;
@@ -171,6 +204,7 @@ export function mapUnitToProduct(args: MapUnitArgs): Product {
     ownerSince: formatDateLong(latestOwnershipAt ?? unit.registered_at),
     safety,
     lastAction,
+    chain: unitChainState(unit),
   };
 }
 
@@ -268,5 +302,23 @@ export function mapVerificationToProduct(row: VerificationRow): Product {
     lastAction: recalled
       ? `Urgent recall · ${formatDateShort(row.recall_issued_at)}`
       : "No active recalls",
+    chain: verificationChainState(row),
+  };
+}
+
+/**
+ * Chain state from a public verification row. Mirrors `unitChainState` but
+ * reads from the flat verification columns rather than a unit row.
+ */
+export function verificationChainState(row: VerificationRow): ProductChainState | null {
+  if (!row.chain_state || row.chain_state === "unregistered") return null;
+  const synced = row.chain_state === "synced";
+  return {
+    programId: row.chain_program_id ?? "",
+    pda: row.chain_pda || null,
+    owner: synced ? (row.chain_owner || null) : null,
+    transferCount: synced ? (row.chain_transfer_count ?? 0) : 0,
+    txSignature: synced ? (row.chain_tx_signature || null) : null,
+    syncedAt: synced ? (row.chain_synced_at || null) : null,
   };
 }
