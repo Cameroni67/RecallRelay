@@ -4,7 +4,7 @@ RecallRelay is a product passport for ownership and safety records. Phase 2 repl
 
 - **Auth** — Solana Sign-In with Solana (SIWS) via `@supabase/ssr`. Your wallet address is your account; no email or password.
 - **Data** — PostgreSQL schema (profiles, manufacturers + members, product models/units, ownership records, recalls, notifications, activity events) with strong row-level security (RLS).
-- **Chain (Phase 3)** — an on-chain program (`solana/recallrelay-program`, program ID `GjKJEvRqGmP3uoAWWTRYCtRAhFVAnf1MDFKdZoPCR4hP`) tracks manufacturer authority, product registration, and ownership transfer. The chain is the authority of record for anything it knows about; Supabase mirrors what the server observed.
+- **Chain (Phase 3)** — an on-chain program (`solana/recallrelay-program`, program ID `GjKJEvRqGmP3uoAWWTRYCtRAhFVAnf1MDFKdZoPCR4hP`) tracks manufacturer authority, product registration, and ownership transfer. The chain is the authority of record for anything it knows about; Supabase mirrors what the server observed. The program is deployed to Devnet; the deployment record and live E2E transaction signatures live in `solana/build-info.md`.
 - **Modes** — the app runs in one of three data modes, shown by an environment badge in the owner and manufacturer sidebars (desktop and mobile drawer):
 
 | Badge | Meaning |
@@ -74,6 +74,7 @@ Hosted Auth requires the **Web3 provider** to be enabled once in the Supabase da
 | `npm run supabase:start` / `:stop` / `:status` | Local stack control |
 | `npm run lint` / `typecheck` / `test` / `build` | App verification |
 | `npm run test:sbf` | LiteSVM program suite (19 tests) — runs the compiled `.so` against `node --test`; re-enters WSL automatically on Windows |
+| `npm run e2e:devnet` | Live Devnet end-to-end — headless SIWS identities, seedless local Supabase, real Devnet transactions: Northstar → HeatCore HC10-2048 → Alice → Bob, 13 assertions; records PDAs and tx signatures (run `npm run db:reset` afterwards) |
 
 ## Solana ownership layer (Phase 3)
 

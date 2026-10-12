@@ -6,7 +6,13 @@
 /** The cluster RecallRelay targets. */
 export const CLUSTER = "devnet" as const;
 
-/** RecallRelay on-chain program ID. */
+/**
+ * RecallRelay on-chain program ID.
+ *
+ * Deployed to Solana Devnet (2026-10-12, slot 510285095). Deploy transaction
+ * `258gQKddgTJHnnAuj1aJ4vGZNhAGbFV1aCCFRUdm3Libi6hvdyXrW8TbShpQVS7mRRasnVxg63VtAQdUzzvSsaPo`;
+ * full deployment record in `solana/build-info.md`.
+ */
 export const PROGRAM_ID = "GjKJEvRqGmP3uoAWWTRYCtRAhFVAnf1MDFKdZoPCR4hP";
 
 /** RPC endpoint used by the client and reconciliation routes. */
