@@ -62,7 +62,7 @@ npm run verify:isolation     # session isolation + public privacy against hosted
 npm run dev
 ```
 
-Hosted Auth requires the **Web3 provider** to be enabled once in the Supabase dashboard: **Authentication → Providers → Web3 → Enable** (Solana). The SIWS flow is the same as local: wallet connect → sign message → `grant_type=web3` session → `auth.uid()` → profile. No redirect URLs are required for the popup flow, but adding `http://localhost:3000` under **Authentication → URL Configuration** is recommended.
+Hosted Auth requires the **Web3 provider** to be enabled once in the Supabase dashboard: **Authentication → Providers → Web3 → Enable** (Solana). The SIWS flow is the same as local: wallet connect → sign message → `grant_type=web3` session → `auth.uid()` → profile. GoTrue validates the `uri` claim inside the signed SIWS message against your URL allow-list, so **Authentication → URL Configuration** must allow-list every origin the app runs from: set **Site URL** to the production URL and keep `http://localhost:3000` / `http://127.0.0.1:3000` in **Redirect URLs** for local development (full details in [`DEPLOYMENT.md`](./DEPLOYMENT.md)).
 
 ### Switching environments safely
 

@@ -54,14 +54,27 @@ platform.
 
 ## Supabase auth configuration (dashboard reference)
 
-Sign-in is `signInWithWeb3` (Solana) with **no `redirectTo`**, so no redirect
-allow-list entry is required for production to work. Recommended hygiene under
+Sign-in is `signInWithWeb3` (Solana), but GoTrue still validates the **`uri`
+claim inside the signed SIWS message** against your URL allow-list (checked in
+`supabase/auth` `internal/api/web3.go` via `IsRedirectURLValid`). A message is
+rejected with *"Signed Solana message is using URI which is not allowed on this
+server"* unless its URI matches the **Site URL or one of the Redirect URLs** —
+and for non-localhost URIs the message's Domain must equal the URI host.
+supabase-js signs `window.location.origin` in the browser, so **every origin
+the app is served from must be allow-listed**. Required configuration under
 **Authentication → URL Configuration**:
 
 - **Site URL**: `https://recallrelay-jamie25.vercel.app`
-- **Redirect URLs**: add `https://recallrelay-jamie25.vercel.app` (allowed list
-  entry only — not used by the popup flow)
-- keep `http://localhost:3000` and `http://127.0.0.1:3000` for local development
+- **Redirect URLs** (all three, exact):
+  - `https://recallrelay-jamie25.vercel.app`
+  - `http://localhost:3000`
+  - `http://127.0.0.1:3000`
+
+The localhost entries keep `npm run dev` and the `verify:auth` /
+`verify:isolation` scripts working (they sign `http://localhost:3000/signin`);
+the production entries let the deployed app complete SIWS. Removing a URL from
+this list breaks sign-in for that origin immediately — treat the list as
+append-only for the two environments above.
 
 **Authentication → Providers → Web3** (Solana) must stay **enabled** (it is).
 

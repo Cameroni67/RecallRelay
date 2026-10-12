@@ -10,7 +10,18 @@ export type PublicEnv = {
 };
 
 function read(name: string): string | null {
-  const value = process.env[name];
+  // NOTE: every public variable must appear as a STATIC `process.env.NEXT_PUBLIC_*`
+  // member expression below. Next.js only inlines static references into
+  // production client bundles — a dynamic `process.env[name]` lookup works in
+  // `next dev` and in tests (real Node process.env) but resolves to nothing in
+  // the browser at runtime, which would silently switch the deployed app into
+  // demo mode ("Supabase is not configured in this environment").
+  const snapshot: Record<string, string | undefined> = {
+    NEXT_PUBLIC_RECALLRELAY_ENV: process.env.NEXT_PUBLIC_RECALLRELAY_ENV,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  };
+  const value = snapshot[name];
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed === "" ? null : trimmed;
