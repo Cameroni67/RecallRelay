@@ -1,0 +1,17 @@
+# Files the Vercel CLI must NOT upload (deployment-time exclusions).
+# Works independently of .gitignore — keeps the upload small and keeps
+# local build artifacts, env files, and the Solana program keypair
+# off the platform entirely.
+.env*
+.vercel
+.next
+out
+coverage
+node_modules
+*.tsbuildinfo
+.sbf-test-build/
+.sbf-test-run/
+# Rust build artifacts + the program keypair (private key — never upload).
+solana/recallrelay-program/target/
+solana/recallrelay-program/.cargo/
+solana/recallrelay-program/program-keypair.json

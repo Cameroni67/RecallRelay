@@ -1,6 +1,8 @@
-# RecallRelay — Phase 4 + 5 (MVP)
+# RecallRelay — Phase 4 + 5 + 6 (judge-ready MVP)
 
-RecallRelay is a product passport for ownership and safety records. Phase 2 replaced the Phase 1 mock layer with real Supabase-backed auth, profiles, and data. Phase 3 added a **real Solana ownership layer (Devnet only)**. Phase 4 + 5 complete the MVP: **manufacturer recalls with current-owner notifications, a privacy-safe public verification page with real scannable QR codes, and UX/loading/error hardening**.
+RecallRelay is a product passport for ownership and safety records. Phase 2 replaced the Phase 1 mock layer with real Supabase-backed auth, profiles, and data. Phase 3 added a **real Solana ownership layer (Devnet only)**. Phase 4 + 5 complete the MVP: **manufacturer recalls with current-owner notifications, a privacy-safe public verification page with real scannable QR codes, and UX/loading/error hardening**. Phase 6 deploys that MVP to **production on Vercel**, wired to the hosted Supabase project (`gnjpnvtdkuzyniwmvgdq`) and the same Devnet program — full deployment record, environment checklist, and judge script in [`DEPLOYMENT.md`](./DEPLOYMENT.md).
+
+- **Live app** — <https://recallrelay-jamie25.vercel.app> (Devnet / test MVP; public verify: `/verify/HC10-2048`)
 
 - **Auth** — Solana Sign-In with Solana (SIWS) via `@supabase/ssr`. Your wallet address is your account; no email or password.
 - **Data** — PostgreSQL schema (profiles, manufacturers + members, product models/units, ownership records, recalls, notifications, activity events) with strong row-level security (RLS).
@@ -14,6 +16,11 @@ RecallRelay is a product passport for ownership and safety records. Phase 2 repl
 | Demo data | No `NEXT_PUBLIC_SUPABASE_*` configured — Phase 1 fixtures, no sign-in |
 | Local data | Supabase local stack (`npx supabase start`) |
 | Hosted data | A hosted Supabase project |
+
+## Production deployment (Phase 6)
+
+The MVP is deployed at <https://recallrelay-jamie25.vercel.app> (Vercel project `recallrelay`, Node 24, `next build`) against the hosted Supabase project and Solana Devnet. Production needs exactly four browser-safe variables and **no server secrets**:
+`NEXT_PUBLIC_RECALLRELAY_ENV=hosted`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL` (canonical origin for QR codes). Deploys are CLI-pushed from `master` (`npx vercel --yes --prod`, then move the stable alias); [`DEPLOYMENT.md`](./DEPLOYMENT.md) has the full environment checklist, Supabase auth configuration notes, verification commands, and the 60–90 second judge script.
 
 ## Run locally (demo mode)
 

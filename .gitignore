@@ -4,6 +4,7 @@ out
 coverage
 .env*
 !.env.example
+.vercel/
 *.tsbuildinfo
 solana/recallrelay-program/program-keypair.json
 solana/recallrelay-program/target/
